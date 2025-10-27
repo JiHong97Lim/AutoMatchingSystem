@@ -4,7 +4,7 @@
   "description": "Simple rating-based player matching library.",
   "main": "index.js",
   "scripts": {
-    "test": "node scripts/showMatchResults.js && node --test"
+    "test": "node scripts/teamAllocationDemo.js && node --test"
   },
   "keywords": [
     "matching",
