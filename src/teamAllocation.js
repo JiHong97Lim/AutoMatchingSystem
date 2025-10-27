@@ -56,6 +56,16 @@ function determineTeamAllocation(caseId, participantCount) {
   };
 }
 
+function resolveParticipantRating(participant) {
+  if (participant && typeof participant === 'object') {
+    const { rating } = participant;
+    if (typeof rating === 'number' && Number.isFinite(rating)) {
+      return rating;
+    }
+  }
+  return 0;
+}
+
 function allocateParticipants({ caseId, participantCount, participants }) {
   if (!Array.isArray(participants)) {
     throw new Error('participants must be provided as an array');
@@ -73,12 +83,68 @@ function allocateParticipants({ caseId, participantCount, participants }) {
   const selected = participants.slice(0, effectiveCount);
   const allocation = determineTeamAllocation(caseId, effectiveCount);
 
-  let offset = 0;
-  const teams = allocation.teamSizes.map((size) => {
-    const team = selected.slice(offset, offset + size);
-    offset += size;
-    return team;
+  const participantsWithRatings = selected.map((participant) => ({
+    participant,
+    rating: resolveParticipantRating(participant),
+  }));
+
+  const sortedParticipants = participantsWithRatings.sort(
+    (a, b) => b.rating - a.rating
+  );
+
+  const teamStates = allocation.teamSizes.map((size, index) => ({
+    size,
+    index,
+    members: [],
+    totalRating: 0,
+  }));
+
+  const EPSILON = 1e-9;
+
+  sortedParticipants.forEach(({ participant, rating }) => {
+    let bestTeam = null;
+    teamStates.forEach((team) => {
+      if (team.members.length >= team.size) {
+        return;
+      }
+
+      if (!bestTeam) {
+        bestTeam = team;
+        return;
+      }
+
+      const teamLoad = team.totalRating / team.size;
+      const bestLoad = bestTeam.totalRating / bestTeam.size;
+
+      if (teamLoad + EPSILON < bestLoad) {
+        bestTeam = team;
+        return;
+      }
+
+      if (Math.abs(teamLoad - bestLoad) <= EPSILON) {
+        const teamFillRatio = team.members.length / team.size;
+        const bestFillRatio = bestTeam.members.length / bestTeam.size;
+
+        if (teamFillRatio + EPSILON < bestFillRatio) {
+          bestTeam = team;
+          return;
+        }
+
+        if (Math.abs(teamFillRatio - bestFillRatio) <= EPSILON && team.index < bestTeam.index) {
+          bestTeam = team;
+        }
+      }
+    });
+
+    if (!bestTeam) {
+      throw new Error('Unable to assign participant to any team');
+    }
+
+    bestTeam.members.push(participant);
+    bestTeam.totalRating += rating;
   });
+
+  const teams = teamStates.map(({ members }) => members);
 
   return {
     ...allocation,
