@@ -16,6 +16,91 @@ function sortPlayersByRating(players) {
   return [...players].sort((a, b) => a.rating - b.rating);
 }
 
+function validateTeamSize(teamSize) {
+  if (!Number.isInteger(teamSize) || teamSize <= 0) {
+    throw new Error('teamSize must be a positive integer');
+  }
+}
+
+function createBalancedTeams(players, teamSize) {
+  const sortedDescending = sortPlayersByRating(players).reverse();
+
+  const teamA = [];
+  const teamB = [];
+  let totalRatingA = 0;
+  let totalRatingB = 0;
+
+  sortedDescending.forEach((player) => {
+    if (teamA.length === teamSize) {
+      teamB.push(player);
+      totalRatingB += player.rating;
+      return;
+    }
+
+    if (teamB.length === teamSize) {
+      teamA.push(player);
+      totalRatingA += player.rating;
+      return;
+    }
+
+    if (totalRatingA <= totalRatingB) {
+      teamA.push(player);
+      totalRatingA += player.rating;
+    } else {
+      teamB.push(player);
+      totalRatingB += player.rating;
+    }
+  });
+
+  return {
+    teamA,
+    teamB,
+    totalRatingA,
+    totalRatingB,
+  };
+}
+
+function createMatchFromTeams(teamA, teamB, teamSize, totalRatingA, totalRatingB) {
+  const averageRatingA = teamSize === 0 ? 0 : totalRatingA / teamSize;
+  const averageRatingB = teamSize === 0 ? 0 : totalRatingB / teamSize;
+
+  return {
+    teams: [
+      {
+        players: teamA,
+        totalRating: totalRatingA,
+        averageRating: averageRatingA,
+      },
+      {
+        players: teamB,
+        totalRating: totalRatingB,
+        averageRating: averageRatingB,
+      },
+    ],
+    ratingDifference: Math.abs(averageRatingA - averageRatingB),
+  };
+}
+
+function matchTeamsByAverageRating(players, { teamSize = 6 } = {}) {
+  if (!Array.isArray(players)) {
+    throw new Error('Players must be provided as an array');
+  }
+
+  validateTeamSize(teamSize);
+
+  const normalizedPlayers = players.map(normalizePlayer);
+  const sortedPlayers = sortPlayersByRating(normalizedPlayers);
+
+  const matches = [];
+  while (sortedPlayers.length >= teamSize * 2) {
+    const segment = sortedPlayers.splice(-teamSize * 2);
+    const { teamA, teamB, totalRatingA, totalRatingB } = createBalancedTeams(segment, teamSize);
+    matches.push(createMatchFromTeams(teamA, teamB, teamSize, totalRatingA, totalRatingB));
+  }
+
+  return { matches, unmatched: sortedPlayers };
+}
+
 /**
  * Match players purely by rating.
  *
@@ -65,4 +150,5 @@ module.exports = {
   matchPlayersByRating,
   normalizePlayer,
   sortPlayersByRating,
+  matchTeamsByAverageRating,
 };
