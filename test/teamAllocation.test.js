@@ -43,3 +43,32 @@ test('allocateParticipants throws when insufficient members are provided', () =>
     allocateParticipants({ caseId: 1, participantCount: 12, participants: ['A'] });
   });
 });
+
+test('allocateParticipants balances team average ratings', () => {
+  const highRated = Array.from({ length: 6 }, (_, index) => ({
+    name: `High ${index + 1}`,
+    rating: 5,
+  }));
+  const lowRated = Array.from({ length: 6 }, (_, index) => ({
+    name: `Low ${index + 1}`,
+    rating: 1,
+  }));
+
+  const participants = [...highRated, ...lowRated];
+
+  const allocation = allocateParticipants({
+    caseId: 1,
+    participantCount: participants.length,
+    participants,
+  });
+
+  const averages = allocation.teams.map((team) => {
+    const totalRating = team.reduce((total, member) => total + member.rating, 0);
+    return totalRating / team.length;
+  });
+
+  const maxAverage = Math.max(...averages);
+  const minAverage = Math.min(...averages);
+
+  assert.ok(maxAverage - minAverage <= 0.5);
+});
