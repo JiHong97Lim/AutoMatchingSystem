@@ -1,7 +1,7 @@
 const test = require('node:test');
 const assert = require('node:assert');
 
-const { Player, matchPlayersByRating } = require('..');
+const { Player, matchPlayersByRating, matchTeamsByAverageRating } = require('..');
 
 test('pairs adjacent players after sorting by rating', () => {
   const players = [
@@ -47,4 +47,35 @@ test('normalizes plain player-like objects', () => {
   const [firstMatch] = matches;
   assert.ok(firstMatch.players[0] instanceof Player);
   assert.ok(firstMatch.players[1] instanceof Player);
+});
+
+test('creates balanced teams of six players with similar averages', () => {
+  const players = Array.from({ length: 12 }, (_, index) =>
+    new Player({ id: index + 1, name: `Player ${index + 1}`, rating: 1000 + index * 10 })
+  );
+
+  const { matches, unmatched } = matchTeamsByAverageRating(players);
+
+  assert.strictEqual(matches.length, 1);
+  assert.strictEqual(unmatched.length, 0);
+
+  const [match] = matches;
+  match.teams.forEach((team) => {
+    assert.strictEqual(team.players.length, 6);
+  });
+  assert.strictEqual(match.ratingDifference, 0);
+});
+
+test('returns unmatched players when not enough for two teams', () => {
+  const players = Array.from({ length: 14 }, (_, index) =>
+    new Player({ id: index + 1, name: `Player ${index + 1}`, rating: 1200 + index * 5 })
+  );
+
+  const { matches, unmatched } = matchTeamsByAverageRating(players);
+
+  assert.strictEqual(matches.length, 1);
+  assert.strictEqual(unmatched.length, 2);
+  unmatched.forEach((player) => {
+    assert.ok(player instanceof Player);
+  });
 });
