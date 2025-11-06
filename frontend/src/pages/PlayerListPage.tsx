@@ -46,7 +46,8 @@ export default function PlayersListPage() {
             <TableCell>나이</TableCell>
             <TableCell>포지션</TableCell>
             <TableCell>키(cm)</TableCell>
-            <TableCell>등록일</TableCell>
+            <TableCell>최초 등록일</TableCell>
+            <TableCell>Active</TableCell>
           </TableRow>
         </TableHead>
         <TableBody>
@@ -58,6 +59,7 @@ export default function PlayersListPage() {
               <TableCell>{p.position ?? '-'}</TableCell>
               <TableCell>{p.height ?? '-'}</TableCell>
               <TableCell>{p.createdAt ? new Date(p.createdAt).toLocaleString() : '-'}</TableCell>
+              <TableCell>{p.active ? 'TRUE' : 'FALSE'}</TableCell>
             </TableRow>
           ))}
           {rows.length === 0 && (
