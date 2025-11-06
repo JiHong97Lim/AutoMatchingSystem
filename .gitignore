@@ -1,0 +1,16 @@
+node_modules/
+dist/
+.build/
+.cache/
+coverage/
+.env
+.env.*.local
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.vscode/
+.DS_Store
+**/Dockerfile
+**/.dockerignore
+prisma/dev.db
